@@ -1,0 +1,28 @@
+// design.sv
+`timescale 1ns/1ps
+module pattern_detector (
+    input  wire clk,   // clock
+    input  wire rst,   // synchronous reset, active high
+    input  wire in,    // serial input bit (1 clock per bit)
+    output wire out    // asserted when 1101 occurs inside last 5 bits
+);
+
+    // 5-bit shift register: shift[0] = newest, shift[4] = oldest
+    reg [4:0] shift;
+    always @(posedge clk) begin
+        if (rst)
+            shift <= 5'b0;
+        else
+            shift <= { shift[3:0], in }; // shift left, bring in as LSB
+    end
+
+    // detect 1101 in either alignment inside window of last 5 bits
+    wire detect_a; // bits [4:1] == 1101
+    wire detect_b; // bits [3:0] == 1101
+
+    assign detect_a = (shift[4] & shift[3] & ~shift[2] & shift[1]);
+    assign detect_b = (shift[3] & shift[2] & ~shift[1] & shift[0]);
+
+    assign out = detect_a | detect_b;
+
+endmodule
